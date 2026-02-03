@@ -1,11 +1,374 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>工厂车间电能监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #3282b8;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #3282b8;
+        }
+        .status {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .status.online { color: #4CAF50; }
+        .status.offline { color: #f44336; }
+        
+        .card {
+            background: rgba(50, 130, 184, 0.1);
+            border: 1px solid #3282b8;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .card-title {
+            font-size: 14px;
+            color: #3282b8;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(50, 130, 184, 0.3);
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .data-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .data-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .data-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3282b8;
+        }
+        .data-unit {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-on {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        .btn-on:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+        }
+        .btn-off {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            color: white;
+        }
+        .btn-off:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #da190b, #b71c1c);
+        }
+        
+        .relay-status {
+            text-align: center;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+        .relay-on {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+        .relay-off {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        
+        .settings {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        .settings label {
+            font-size: 12px;
+            color: #888;
+        }
+        .settings input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #3282b8;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 14px;
+        }
+        .settings button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            background: #3282b8;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏭 工厂车间电能监控</h1>
+        <div id="status" class="status offline">未连接</div>
+    </div>
+    
+    <div class="card">
+        <div class="card-title">📊 环境数据</div>
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="data-label">温度</div>
+                <div class="data-value"><span id="temp">--</span><span class="data-unit">°C</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">湿度</div>
+                <div class="data-value"><span id="humi">--</span><span class="data-unit">%</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-title">⚡ 电参数</div>
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="data-label">电压</div>
+                <div class="data-value"><span id="volt">--</span><span class="data-unit">V</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">电流</div>
+                <div class="data-value"><span id="curr">--</span><span class="data-unit">A</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">功率</div>
+                <div class="data-value"><span id="power">--</span><span class="data-unit">W</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">电能</div>
+                <div class="data-value"><span id="energy">--</span><span class="data-unit">kWh</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">频率</div>
+                <div class="data-value"><span id="freq">--</span><span class="data-unit">Hz</span></div>
+            </div>
+            <div class="data-item">
+                <div class="data-label">功率因数</div>
+                <div class="data-value"><span id="pf">--</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-title">🔌 继电器控制</div>
+        <div id="relayStatus" class="relay-status relay-off">
+            继电器状态: 关闭
+        </div>
+        <div class="control-panel">
+            <button class="btn btn-on" onclick="controlRelay('on')">开 启</button>
+            <button class="btn btn-off" onclick="controlRelay('off')">关 闭</button>
+        </div>
+    </div>
+    
+    <div class="settings">
+        <label>设备IP地址（连接ESP热点后使用默认地址）</label>
+        <input type="text" id="deviceIP" value="192.168.4.1" placeholder="例如: 192.168.4.1">
+        <button onclick="saveIP()">保存并连接</button>
+    </div>
+
+    <script>
+        let deviceIP = localStorage.getItem('deviceIP') || '192.168.4.1';
+        let relayState = false;
+        
+        // 初始化
+        document.getElementById('deviceIP').value = deviceIP;
+        
+        // 保存IP
+        function saveIP() {
+            deviceIP = document.getElementById('deviceIP').value.trim();
+            localStorage.setItem('deviceIP', deviceIP);
+            fetchData();
+            alert('已保存: ' + deviceIP);
+        }
+        
+        // 获取数据
+        function fetchData() {
+            const url = 'http://' + deviceIP + '/data';
+            
+            fetch(url, { 
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache'
+            })
+            .then(response => response.text())
+            .then(data => {
+                // 解析数据格式: T:25.5C H:60.0% ...
+                parseData(data);
+                updateStatus(true);
+            })
+            .catch(error => {
+                console.log('连接失败:', error);
+                updateStatus(false);
+            });
+        }
+        
+        // 解析数据
+        function parseData(data) {
+            try {
+                // 数据格式: temp,humi,volt,curr,power,energy,freq,pf,relay
+                const lines = data.trim().split('\n');
+                let values = [];
+                
+                // 尝试解析逗号分隔格式
+                if (data.includes(',')) {
+                    values = data.split(',');
+                } else {
+                    // 解析 T:25.5C H:60.0% 格式
+                    const temp = data.match(/T:([\d.]+)/);
+                    const humi = data.match(/H:([\d.]+)/);
+                    const volt = data.match(/U:([\d.]+)/);
+                    const curr = data.match(/I:([\d.]+)/);
+                    const power = data.match(/P:([\d.]+)/);
+                    const energy = data.match(/E:([\d.]+)/);
+                    const freq = data.match(/F:([\d.]+)/);
+                    const pf = data.match(/PF:([\d.]+)/);
+                    const relay = data.match(/R:(\d)/);
+                    
+                    if (temp) document.getElementById('temp').textContent = temp[1];
+                    if (humi) document.getElementById('humi').textContent = humi[1];
+                    if (volt) document.getElementById('volt').textContent = volt[1];
+                    if (curr) document.getElementById('curr').textContent = curr[1];
+                    if (power) document.getElementById('power').textContent = power[1];
+                    if (energy) document.getElementById('energy').textContent = energy[1];
+                    if (freq) document.getElementById('freq').textContent = freq[1];
+                    if (pf) document.getElementById('pf').textContent = pf[1];
+                    if (relay) updateRelayStatus(relay[1] === '1');
+                    return;
+                }
+                
+                if (values.length >= 8) {
+                    document.getElementById('temp').textContent = parseFloat(values[0]).toFixed(1);
+                    document.getElementById('humi').textContent = parseFloat(values[1]).toFixed(1);
+                    document.getElementById('volt').textContent = parseFloat(values[2]).toFixed(1);
+                    document.getElementById('curr').textContent = parseFloat(values[3]).toFixed(2);
+                    document.getElementById('power').textContent = parseFloat(values[4]).toFixed(1);
+                    document.getElementById('energy').textContent = parseFloat(values[5]).toFixed(2);
+                    document.getElementById('freq').textContent = parseFloat(values[6]).toFixed(1);
+                    document.getElementById('pf').textContent = parseFloat(values[7]).toFixed(2);
+                    
+                    if (values.length >= 9) {
+                        updateRelayStatus(values[8].trim() === '1');
+                    }
+                }
+            } catch (e) {
+                console.log('解析错误:', e);
+            }
+        }
+        
+        // 更新连接状态
+        function updateStatus(online) {
+            const el = document.getElementById('status');
+            if (online) {
+                el.textContent = '已连接 - ' + deviceIP;
+                el.className = 'status online';
+            } else {
+                el.textContent = '连接失败 - 请检查WiFi';
+                el.className = 'status offline';
+            }
+        }
+        
+        // 更新继电器状态显示
+        function updateRelayStatus(isOn) {
+            relayState = isOn;
+            const el = document.getElementById('relayStatus');
+            if (isOn) {
+                el.textContent = '继电器状态: 开启 🟢';
+                el.className = 'relay-status relay-on';
+            } else {
+                el.textContent = '继电器状态: 关闭 🔴';
+                el.className = 'relay-status relay-off';
+            }
+        }
+        
+        // 控制继电器
+        function controlRelay(action) {
+            const url = 'http://' + deviceIP + '/' + action;
+            
+            fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache'
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log('控制响应:', data);
+                updateRelayStatus(action === 'on');
+                // 立即刷新数据
+                setTimeout(fetchData, 200);
+            })
+            .catch(error => {
+                console.log('控制失败:', error);
+                alert('控制失败，请检查连接');
+            });
+        }
+        
+        // 定时刷新数据
+        setInterval(fetchData, 2000);
+        
+        // 页面加载时获取数据
+        window.onload = function() {
+            fetchData();
+        };
+    </script>
+</body>
 </html>
